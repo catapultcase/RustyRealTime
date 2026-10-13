@@ -47,9 +47,17 @@ Two points raised on the request shaped this design. Both are addressed below:
 
 Side benefit: the narration filter could also clean today's completed answers (a separate change).
 
-Related, outside this change: our bridge drops Open WebUI's `[Historical voice assistant transcript…]` label before
-speaking, because the chat model sometimes repeats it in an answer. A label models are less likely to echo would let
-providers drop that string match.
+## Hardening: spoken transcripts are tagged, not labelled
+
+Open WebUI gives the chat model earlier spoken replies as assistant messages whose text starts with
+`[Historical voice assistant transcript; not current task status]`. To the model that reads as its own reply style, and
+it copies the line into answers, where a word-for-word provider speaks it. Filtering the string in each provider breaks
+whenever the wording changes (the frontend already uses a second wording).
+
+The patch moves the tag out of the text: the transcript is clean assistant content with the message `name` `voice`, and
+one system note (appended to the system message, so every chat template accepts it) says what that name means. Checked:
+TensorFold and llama.cpp both accept `name` on assistant messages. Our bridge keeps its string filter only as a fallback
+for unpatched Open WebUI.
 
 ## Proof plan
 
