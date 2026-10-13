@@ -1,7 +1,15 @@
 # RustyRealTime
 
 Making Open WebUI's Realtime voice calls start speaking a long answer while the chat model is still writing
-it, without reading out the "let me search some more" in between. The work is done in the open:
+it, without reading out the "let me search some more" in between.
+
+A real call on the proof of concept: small talk from the voice model (`qwen3.5-9b`), then a question handed to the
+chat model (`qwen3.8-flash-next`) and spoken while it is still being written
+([MP4](docs/media/realtime-streaming-poc.mp4)):
+
+https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
+
+The work is done in the open:
 
 - **Request:** [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). The design builds on the
   points raised there: no spoken narration, and summarising setups unchanged.
