@@ -1,0 +1,312 @@
+From 94f68bbff8516790b5f023ec722d5f829218ca8f Mon Sep 17 00:00:00 2001
+From: rusty6285 <rustyone@gmail.com>
+Date: Mon, 12 Oct 2026 22:19:09 -0500
+Subject: [PATCH] feat: stream a Realtime hand-off's answer to the voice
+ provider while it is written (opt-in)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ backend/open_webui/config.py                  |  7 +++
+ backend/open_webui/routers/audio/__init__.py  |  4 ++
+ backend/open_webui/routers/audio/realtime.py  | 38 ++++++++++++--
+ .../components/admin/Settings/Audio.svelte    | 27 ++++++++++
+ src/lib/i18n/locales/en-US/translation.json   |  6 ++-
+ src/lib/utils/realtime.ts                     | 50 +++++++++++++++++++
+ 6 files changed, 128 insertions(+), 4 deletions(-)
+
+diff --git a/backend/open_webui/config.py b/backend/open_webui/config.py
+index a5e2205..c720df1 100644
+--- a/backend/open_webui/config.py
++++ b/backend/open_webui/config.py
+@@ -1655,6 +1655,11 @@ AUDIO_REALTIME_OPENAI_API_KEY = os.getenv('AUDIO_REALTIME_OPENAI_API_KEY', '')
+ AUDIO_REALTIME_MODEL = os.getenv('AUDIO_REALTIME_MODEL', 'gpt-realtime-2.1-mini')
+ AUDIO_REALTIME_VOICE = os.getenv('AUDIO_REALTIME_VOICE', 'marin')
+ AUDIO_REALTIME_TRANSCRIPTION_MODEL = os.getenv('AUDIO_REALTIME_TRANSCRIPTION_MODEL', 'gpt-transcribe')
++# Send a chat answer's final text to the voice provider sentence by sentence while it streams. Off by default:
++# only providers that handle openwebui.function_call_output.delta should get it.
++AUDIO_REALTIME_STREAM_RESULTS = os.getenv('AUDIO_REALTIME_STREAM_RESULTS', 'False').lower() == 'true'
++# Complete sentences an answer segment must hold, with no tool call after it, before any of it is sent.
++AUDIO_REALTIME_STREAM_MIN_SENTENCES = int(os.getenv('AUDIO_REALTIME_STREAM_MIN_SENTENCES', '2'))
+ REALTIME_CALL_PROMPT_TEMPLATE = os.getenv('REALTIME_CALL_PROMPT_TEMPLATE')
+ 
+ AUDIO_TTS_SPLIT_ON = os.getenv('AUDIO_TTS_SPLIT_ON', 'punctuation')
+@@ -3132,6 +3137,8 @@ DEFAULT_CONFIG = {
+     'audio.realtime.model': AUDIO_REALTIME_MODEL,
+     'audio.realtime.voice': AUDIO_REALTIME_VOICE,
+     'audio.realtime.transcription_model': AUDIO_REALTIME_TRANSCRIPTION_MODEL,
++    'audio.realtime.stream_results': AUDIO_REALTIME_STREAM_RESULTS,
++    'audio.realtime.stream_min_sentences': AUDIO_REALTIME_STREAM_MIN_SENTENCES,
+     'audio.realtime.prompt_template': REALTIME_CALL_PROMPT_TEMPLATE,
+     'audio.tts.engine': AUDIO_TTS_ENGINE,
+     'audio.tts.model': AUDIO_TTS_MODEL,
+diff --git a/backend/open_webui/routers/audio/__init__.py b/backend/open_webui/routers/audio/__init__.py
+index eb0d045..f3e2a5c 100644
+--- a/backend/open_webui/routers/audio/__init__.py
++++ b/backend/open_webui/routers/audio/__init__.py
+@@ -106,6 +106,8 @@ REALTIME_CONFIG_KEYS = {
+     'MODEL': 'audio.realtime.model',
+     'VOICE': 'audio.realtime.voice',
+     'TRANSCRIPTION_MODEL': 'audio.realtime.transcription_model',
++    'STREAM_RESULTS': 'audio.realtime.stream_results',
++    'STREAM_MIN_SENTENCES': 'audio.realtime.stream_min_sentences',
+     'REALTIME_CALL_PROMPT_TEMPLATE': 'audio.realtime.prompt_template',
+ }
+ 
+@@ -298,6 +300,8 @@ class RealtimeConfigForm(BaseModel):
+     MODEL: str = Field(default='gpt-realtime-2.1-mini', min_length=1, max_length=200)
+     VOICE: str = Field(default='marin', min_length=1, max_length=200)
+     TRANSCRIPTION_MODEL: str = Field(default='gpt-transcribe', min_length=1, max_length=200)
++    STREAM_RESULTS: bool = False
++    STREAM_MIN_SENTENCES: int = Field(default=2, ge=1, le=10)
+     REALTIME_CALL_PROMPT_TEMPLATE: Optional[str] = None
+ 
+ 
+diff --git a/backend/open_webui/routers/audio/realtime.py b/backend/open_webui/routers/audio/realtime.py
+index 5d1c5b0..2403af4 100644
+--- a/backend/open_webui/routers/audio/realtime.py
++++ b/backend/open_webui/routers/audio/realtime.py
+@@ -57,7 +57,9 @@ Treat gestures as your actions and converse naturally without narrating their im
+ class CallProtocol:
+     """Connection-local IDs and the client command allowlist; never forwards session settings."""
+ 
+-    def __init__(self, gestures=()):
++    def __init__(self, gestures=(), stream_results=False):
++        self.stream_results = stream_results
++        self.streamed = {}
+         self.gesture_names = {gesture.name for gesture in gestures}
+         self.animation_tools = avatar_animation_tools(gestures) if gestures else []
+         self.animation_calls = {}
+@@ -235,6 +237,20 @@ class CallProtocol:
+                     'tool_choice': 'auto' if tools else 'none',
+                 },
+             }
++        if kind == 'bridge.result.delta' and set(event) == {'type', 'call_id', 'delta'}:
++            # Sentences of the answer's final text, sent while the chat model is still writing it. The provider
++            # may speak them; the function_call_output that follows is still the complete answer.
++            if not self.stream_results:
++                raise ValueError('Streaming results are disabled')
++            if event['call_id'] not in self.functions:
++                raise ValueError('Unknown or resolved function call')
++            if not isinstance(event['delta'], str) or not event['delta']:
++                raise ValueError('Invalid function result delta')
++            sent = self.streamed.get(event['call_id'], 0) + len(event['delta'])
++            if sent > 100000:
++                raise ValueError('Invalid function result delta')
++            self.streamed[event['call_id']] = sent
++            return {'type': 'openwebui.function_call_output.delta', 'call_id': event['call_id'], 'delta': event['delta']}
+         if kind == 'bridge.result' and set(event) == {'type', 'call_id', 'status', 'answer'}:
+             if event['call_id'] not in self.functions:
+                 raise ValueError('Unknown or resolved function call')
+@@ -243,6 +259,7 @@ class CallProtocol:
+             if not isinstance(event['answer'], str) or len(event['answer']) > 100000:
+                 raise ValueError('Invalid function answer')
+             self.functions.remove(event['call_id'])
++            self.streamed.pop(event['call_id'], None)
+             self.results[event['call_id']] = event['status']
+             return {
+                 'type': 'conversation.item.create',
+@@ -327,6 +344,8 @@ async def realtime_call(ws: WebSocket):
+             'audio.realtime.voice',
+             'audio.realtime.transcription_model',
+             'audio.realtime.prompt_template',
++            'audio.realtime.stream_results',
++            'audio.realtime.stream_min_sentences',
+             'user.permissions',
+         )
+         if not config.get('audio.realtime.enabled'):
+@@ -355,7 +374,8 @@ async def realtime_call(ws: WebSocket):
+             except Exception:
+                 raise ValueError('Chat model access denied') from None
+         protocol = CallProtocol(
+-            model_info.meta.voice_avatar.gestures if model_info and model_info.meta.voice_avatar else ()
++            model_info.meta.voice_avatar.gestures if model_info and model_info.meta.voice_avatar else (),
++            stream_results=bool(config.get('audio.realtime.stream_results')),
+         )
+         override = ModelVoice.model_validate((model_info.meta.model_dump().get('voice') if model_info else None) or {})
+         voice_model = config.get('audio.realtime.model')
+@@ -427,7 +447,19 @@ async def realtime_call(ws: WebSocket):
+             event = await upstream.receive_json()
+             if event.get('type') != 'session.updated':
+                 raise ValueError('Provider rejected voice configuration. Check model, voice, and transcription model.')
+-        await ws.send_json({'type': 'bridge.ready', 'model': voice_model, 'voice': voice, 'sample_rate': 24000})
++        await ws.send_json(
++            {
++                'type': 'bridge.ready',
++                'model': voice_model,
++                'voice': voice,
++                'sample_rate': 24000,
++                'stream_results': (
++                    {'min_sentences': int(config.get('audio.realtime.stream_min_sentences') or 2)}
++                    if protocol.stream_results
++                    else None
++                ),
++            }
++        )
+ 
+         async def client_events():
+             while True:
+diff --git a/src/lib/components/admin/Settings/Audio.svelte b/src/lib/components/admin/Settings/Audio.svelte
+index 96c4950..fa5c3c8 100644
+--- a/src/lib/components/admin/Settings/Audio.svelte
++++ b/src/lib/components/admin/Settings/Audio.svelte
+@@ -38,6 +38,8 @@
+ 		MODEL: 'gpt-realtime-2.1-mini',
+ 		VOICE: 'marin',
+ 		TRANSCRIPTION_MODEL: 'gpt-transcribe',
++		STREAM_RESULTS: false,
++		STREAM_MIN_SENTENCES: 2,
+ 		REALTIME_CALL_PROMPT_TEMPLATE: ''
+ 	};
+ 
+@@ -310,6 +312,31 @@
+ 				<AdminSettingField label={$i18n.t('Input Transcription Model')}>
+ 					<input class={inputClass} bind:value={realtime.TRANSCRIPTION_MODEL} />
+ 				</AdminSettingField>
++				<AdminSettingRow
++					label={$i18n.t('Stream answers to the voice provider')}
++					description={$i18n.t(
++						'Send the chat model’s answer sentence by sentence while it is written, so speech can start sooner. Only for providers that support it.'
++					)}
++					let:labelId
++				>
++					<Switch bind:state={realtime.STREAM_RESULTS} ariaLabelledbyId={labelId} />
++				</AdminSettingRow>
++				{#if realtime.STREAM_RESULTS}
++					<AdminSettingRow
++						label={$i18n.t('Sentences before streaming')}
++						description={$i18n.t(
++							'Complete sentences the answer must hold, with no tool call after them, before any of it is sent.'
++						)}
++					>
++						<input
++							class="{inputClass} w-20"
++							type="number"
++							min="1"
++							max="10"
++							bind:value={realtime.STREAM_MIN_SENTENCES}
++						/>
++					</AdminSettingRow>
++				{/if}
+ 				<AdminSettingField label={$i18n.t('Prompt Template')}>
+ 					<Textarea
+ 						className={textareaClass}
+diff --git a/src/lib/i18n/locales/en-US/translation.json b/src/lib/i18n/locales/en-US/translation.json
+index 335907f..4dd929a 100644
+--- a/src/lib/i18n/locales/en-US/translation.json
++++ b/src/lib/i18n/locales/en-US/translation.json
+@@ -3888,5 +3888,9 @@
+ 	"Public key": "",
+ 	"Enter the Ed25519 public key provided by the app.": "",
+ 	"Edit details manually": "",
+-	"Enter details manually": ""
++	"Enter details manually": "",
++	"Stream answers to the voice provider": "",
++	"Send the chat model’s answer sentence by sentence while it is written, so speech can start sooner. Only for providers that support it.": "",
++	"Sentences before streaming": "",
++	"Complete sentences the answer must hold, with no tool call after them, before any of it is sent.": ""
+ }
+diff --git a/src/lib/utils/realtime.ts b/src/lib/utils/realtime.ts
+index d1d76f5..176e7bc 100644
+--- a/src/lib/utils/realtime.ts
++++ b/src/lib/utils/realtime.ts
+@@ -1,5 +1,6 @@
+ import { v4 as uuidv4 } from 'uuid';
+ import { AUDIO_API_BASE_URL } from '$lib/constants';
++import { getOutputText } from '$lib/components/chat/Messages/structuredOutput';
+ 
+ export type BridgeSubmission = {
+ 	status: 'submitted' | 'deferred' | 'rejected';
+@@ -25,6 +26,10 @@ type VoiceTurn = {
+ 	modelId: string;
+ 	finished: boolean;
+ 	approval: boolean;
++	/** Text already sent with bridge.result.delta; it ends on a sentence boundary. */
++	streamed?: string;
++	/** A tool call followed the streamed text: send nothing more until the final result. */
++	streamClosed?: boolean;
+ };
+ type Options = {
+ 	context: () => CallContext;
+@@ -66,6 +71,31 @@ export function getBridgeTurnState(message: any) {
+ 	return 'completed';
+ }
+ 
++// A sentence ends at . ! ? or … (optionally followed by closing quotes, brackets or emphasis) before whitespace,
++// or at a line break, which also ends a list item or heading.
++const SENTENCE_END = /[.!?\u2026]["'\u201d\u2019)\]*_]*(?=\s)|\n/g;
++
++/**
++ * The part of a streaming answer that may be spoken before the turn completes.
++ *
++ * Only text after the turn's last tool call can be the answer: text followed by a tool call is the model
++ * narrating its work. The trailing text is released once it holds `minSentences` complete sentences, so a
++ * one-line preamble that turns out to precede another tool call is never spoken. Returns the trailing text
++ * up to its last complete sentence, or '' while it is held.
++ */
++export function getStreamableText(output: any[] | null | undefined, minSentences: number): string {
++	const items = output ?? [];
++	let start = 0;
++	items.forEach((item, index) => {
++		if (item?.type === 'function_call' || item?.type === 'function_call_output') start = index + 1;
++	});
++	const text = getOutputText(items.slice(start));
++	const ends = [...text.matchAll(SENTENCE_END)]
++		.map((match) => match.index! + match[0].length)
++		.filter((end) => text.slice(0, end).trim());
++	return ends.length >= minSentences ? text.slice(0, ends[ends.length - 1]) : '';
++}
++
+ /** One browser call, with no provider credentials and no alternate chat execution path. */
+ export class RealtimeCall {
+ 	connected = false;
+@@ -94,6 +124,8 @@ export class RealtimeCall {
+ 	private callId = '';
+ 	private token = '';
+ 	private configuration = '';
++	/** Set by the server when results may stream to the provider (AUDIO_REALTIME_STREAM_RESULTS). */
++	private streamResults: { min_sentences: number } | null = null;
+ 	private chatContext = '';
+ 	private cancelRequested = false;
+ 	private receivingSpeech = '';
+@@ -345,6 +377,7 @@ export class RealtimeCall {
+ 			if (event.sample_rate !== 24000) throw new Error('Wrong sample rate');
+ 			this.model = event.model;
+ 			this.voice = event.voice;
++			this.streamResults = event.stream_results ?? null;
+ 			this.connected = true;
+ 			this.connecting = false;
+ 			this.syncContext();
+@@ -584,6 +617,7 @@ export class RealtimeCall {
+ 		if (state === 'approval' && !turn.approval)
+ 			this.enqueue({ type: 'bridge.status', status: 'approval' });
+ 		turn.approval = this.approval;
++		if (state === 'working') this.streamResult(turn, message);
+ 		if (['completed', 'failed', 'cancelled'].includes(state)) {
+ 			this.result(
+ 				turn,
+@@ -596,6 +630,22 @@ export class RealtimeCall {
+ 		this.options.change();
+ 	}
+ 
++	/** Send the newly complete sentences of a still-streaming answer to the provider. */
++	private streamResult(turn: VoiceTurn, message: any) {
++		if (!this.streamResults || turn.streamClosed) return;
++		const text = getStreamableText(message?.output, this.streamResults.min_sentences);
++		const sent = turn.streamed ?? '';
++		if (sent && !text.startsWith(sent)) {
++			// The streamed text was followed by a tool call. The provider has what it spoke; the final
++			// result carries everything after it.
++			turn.streamClosed = true;
++			return;
++		}
++		if (text.length <= sent.length) return;
++		turn.streamed = text;
++		this.send({ type: 'bridge.result.delta', call_id: turn.callId, delta: text.slice(sent.length) });
++	}
++
+ 	private result(turn: VoiceTurn, status: string, answer: string, speak = true) {
+ 		turn.finished = true;
+ 		this.send({
+-- 
+2.56.0
+
