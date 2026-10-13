@@ -130,49 +130,6 @@ index 5d1c5b0..7e47c13 100644
  
          async def client_events():
              while True:
-diff --git a/backend/open_webui/utils/middleware.py b/backend/open_webui/utils/middleware.py
-index 57ac2e7..b26cfcf 100644
---- a/backend/open_webui/utils/middleware.py
-+++ b/backend/open_webui/utils/middleware.py
-@@ -2304,6 +2304,16 @@ def strip_reasoning_details(output: list) -> list:
-     ]
- 
- 
-+# Spoken replies from a Realtime call are tagged with this message name, not with text inside the reply: a label in
-+# an assistant message's content reads to the model as part of its own reply style, and models copy it into answers.
-+VOICE_TRANSCRIPT_NAME = 'voice'
-+VOICE_TRANSCRIPT_NOTE = (
-+    f'Assistant messages named "{VOICE_TRANSCRIPT_NAME}" are spoken replies from the voice call. '
-+    'They are historical, not current task status: do not treat their claims about work in progress as done, '
-+    'and do not repeat their wording as a label in your reply.'
-+)
-+
-+
- def process_messages_with_output(
-     messages: list[dict],
-     reasoning_format: str | None = None,
-@@ -2337,7 +2347,8 @@ def process_messages_with_output(
-         speech = [
-             {
-                 'role': 'assistant',
--                'content': '[Historical voice assistant transcript; not current task status]\n' + item['transcript'],
-+                'name': VOICE_TRANSCRIPT_NAME,
-+                'content': item['transcript'],
-             }
-             for item in transcripts
-             if isinstance(item, dict) and isinstance(item.get('transcript'), str) and item['transcript']
-@@ -2567,6 +2578,11 @@ async def process_chat_payload(request, form_data, user, metadata, model):
-         except Exception:
-             pass
- 
-+    if any(message.get('name') == VOICE_TRANSCRIPT_NAME for message in form_data.get('messages', [])):
-+        form_data['messages'] = add_or_update_system_message(
-+            VOICE_TRANSCRIPT_NOTE, form_data['messages'], append=True
-+        )
-+
-     form_data = await convert_url_images_to_base64(form_data, user=user)
- 
-     event_emitter = await get_event_emitter(metadata)
 diff --git a/src/lib/components/admin/Settings/Audio.svelte b/src/lib/components/admin/Settings/Audio.svelte
 index 96c4950..4264e8a 100644
 --- a/src/lib/components/admin/Settings/Audio.svelte

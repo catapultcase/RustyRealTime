@@ -41,7 +41,8 @@ answer), and it is never later than today.
 
 ## Build
 
-- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against dev `93d25db`, 7 files, 146 lines.
+- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against dev `93d25db`, 6 files, 129 lines: call code and
+  its two settings only, no core changes.
 - **Bridge:** [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
   speaks released text in whole sentences by its own TTS splitter.
 - **Open:** streamed sentences reach the voice model's history only with the final result; may matter for follow-ups.
