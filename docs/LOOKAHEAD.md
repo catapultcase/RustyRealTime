@@ -14,27 +14,32 @@ network"); text without one is the answer.
 | Layer | What | Exact? |
 |---|---|---|
 | Structure | never speak reasoning or tool output; only text after the latest tool result; stop releasing once a tool call starts | yes |
-| Lookahead | release text only once the model has kept writing for **K** after it; narration is followed by nothing but the call | measured |
+| Lookahead | release text only once the model has written **K** more bytes after it; narration is followed by nothing but the call | measured |
 | Model signal | if the model marks commentary vs final answer, use it | yes, where available |
 | Contract | Voice Mode Prompt: no text before tool calls in voice turns | reduces it at the source |
 
 K is an admin setting (plus env var), per-model override if models differ. Off by default. Worst case: a long
 narration's start is spoken, a short true sentence.
 
-## Results (96 runs, 3 models, English/Chinese/Japanese/German, lists/tables/code)
+## Results
 
-- **Narration comes right before the tool call:** text after a tool call started: **0 of 251** steps.
-- **K's unit is time.** Narration took under 1.3 s on every model, though its length in characters varied 2×; stream
-  chunk counts vary 5× between servers, so they are no unit.
+**Runs:** 96 idle (3 models; English, Chinese, Japanese, German; lists, tables, code) and 32 with both Spark pairs at
+their 4-request limit ([`proof/load.py`](../proof/load.py)).
 
-| K | Qwen3.8-Flash-Next | GLM-5.3-Flash | Qwen3.5-9B |
-|---|---|---|---|
-| 1.0 s | 2/20 narration spoken, saves 1.4 s | 4/30, 4.7 s | 0/22, 0.8 s |
-| **1.5 s** | **0/20**, saves 0.9 s | **0/30**, 4.2 s | **0/22**, 0.3 s |
-| sentence rule (old) | 4/20 | 0/30 | 15/22 |
+- **Narration comes right before the tool call:** text after a tool call started, **0 of 251** steps.
+- **Time fails under load.** Narration took ≤1.3 s idle but up to 2.7 s under load, so K = 1.5 s released 7/15 (GLM).
+- **Text amount doesn't change with load. Counted in UTF-8 bytes it evens out scripts:** GLM's Chinese narration is
+  31 characters but 93 bytes, against 98 bytes in English.
 
-The gain grows with answer length. **Open:** a busy server writes narration slower; next run under load. Tool results
-are canned (machine names anonymised here).
+| K = 300 bytes | Narration spoken | Speech starts sooner (median) |
+|---|---|---|
+| Qwen3.8-Flash-Next, idle / loaded | 0/20 / 0/10 | 1.3 s / 2.1 s |
+| GLM-5.3-Flash, idle / loaded | 0/30 / 0/15 | 4.5 s / 9.3 s |
+| Qwen3.5-9B, idle | 2/22 (wordy: up to 405 bytes in Japanese) | 1.2 s |
+| sentence rule (old), idle | 4/20, 0/30, 15/22 | |
+
+**Leaning:** K in bytes, default ~300, per-model override for wordy models. Tool results are canned (machine names
+anonymised here).
 
 ## Decision log
 
@@ -48,3 +53,4 @@ are canned (machine names anonymised here).
 | Rusty | "we don't want 2 solutions": all in Open WebUI, pipe is plan B |
 | Rusty | challenged "always": split into a verified structural claim and a measured rate |
 | Rusty | K in the admin panel; build in the open, debates included |
+| Rusty | "make them busy yourself": the run under load showed time fails as K's unit; bytes hold |
