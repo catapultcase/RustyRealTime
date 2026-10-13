@@ -1,31 +1,29 @@
-# RustyRealTime
+# RustyRealTime (branch `lookahead`)
 
-Making Open WebUI's Realtime voice calls start speaking a long answer while the chat model is still writing
-it, without reading out the "let me search some more" in between.
-
-A real call on the proof of concept: small talk from the voice model (`qwen3.5-9b`), then a question handed to the
-chat model (`qwen3.8-flash-next`) and spoken while it is still being written
-([MP4](docs/media/realtime-streaming-poc.mp4)):
+Open WebUI Realtime voice calls that start speaking a long answer while the chat model is still writing it.
+Request: [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). Work in progress.
 
 https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
 
-The work is done in the open:
+| Problem | Solution |
+|---|---|
+| The voice side gets the answer only when it's complete: long answers mean silence | opt-in streaming: answer text goes to the voice provider while it's written |
+| Text before a tool call is narration ("let me search more") and shouldn't be spoken; nobody knows a tool call is coming until it starts | only text after the latest tool result, held back until the model has written 400 more bytes after it; narration is followed only by the call, so it never gets there |
+| Rules based on punctuation break across models, languages and formats | none used: structure and a byte count only |
+| Summarising voice setups need the whole answer | off by default; nothing changes unless switched on |
+| Talking over a streamed answer | stops it, as today |
 
-- **Request:** [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). The design builds on the
-  points raised there: no spoken narration, and summarising setups unchanged.
-- **Design and results:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). On this branch, the hold rule is replaced by a
-  byte lookahead with no punctuation rules: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
-- **Proof scripts:** [proof/](proof). `export.py` pulls real tool-using answers from an Open WebUI database
-  (read-only); `replay.py` replays their last step against your chat model and reports when speech could
-  start, and how much narration each hold rule would speak.
-- **Our call setup:** [rustys-fully-local-realtime-chat-via-open-webui](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui).
+**Settings** (Admin → Audio → Voice calls): *Stream answers to the voice provider* (`AUDIO_REALTIME_STREAM_RESULTS`)
+and *Streaming lookahead (bytes)* (`AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES`, default 400).
 
-```bash
-ssh root@<openwebui-host> 'docker exec -i open-webui python3 -' < proof/export.py > proof/turns.jsonl
-python3 proof/replay.py proof/turns.jsonl http://<chat-server>/v1 > proof/results.jsonl
-python3 proof/replay.py --report proof/results.jsonl proof/turns.jsonl
-```
+**Tested:** 3 models, 4 languages, lists/tables/code, idle and under load: no narration spoken; speech starts 1-8 s
+sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
-The `.jsonl` files hold your own chats, so they are gitignored. Only the summaries are published.
+| | |
+|---|---|
+| Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 129 lines, call code and settings only |
+| Voice provider | [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead) (HF speech-to-speech + patch) |
+| Test scripts | [proof/](proof) |
+| Earlier design (`main`) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 MIT ([LICENSE](LICENSE)).
