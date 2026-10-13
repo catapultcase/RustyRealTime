@@ -16,7 +16,7 @@ PORT=${2:-3010}
 DATA=${DATA:-$HOME/owui-rrt-data}
 mkdir -p "$DATA"
 docker rm -f open-webui-rrt >/dev/null 2>&1 || true
-docker run -d --name open-webui-rrt -p "$PORT:8080" -v "$DATA:/app/backend/data" \
+docker run -d --name open-webui-rrt --restart unless-stopped -p "$PORT:8080" -v "$DATA:/app/backend/data" \
   -e OPENAI_API_BASE_URLS="$CHAT_URL" -e OPENAI_API_KEYS=none \
   -e ENABLE_OLLAMA_API=false \
   -e AUDIO_REALTIME_ENABLED=true \
