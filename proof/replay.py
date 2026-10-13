@@ -27,7 +27,13 @@ SENTENCE = re.compile(r"[.!?…](?:[\"')\]*_]*)(?=\s)|\n")
 
 def sentences_done(text):
     """Complete sentences in text, and the end offset of each (a newline ends a line of a list too)."""
-    return [m.end() for m in SENTENCE.finditer(text) if text[: m.end()].strip()]
+    # A boundary counts only after real text: blank lines between paragraphs are not sentences.
+    ends, last = [], 0
+    for m in SENTENCE.finditer(text):
+        if text[last : m.end()].strip():
+            ends.append(m.end())
+        last = m.end()
+    return ends
 
 
 def commit_at(deltas, rule):

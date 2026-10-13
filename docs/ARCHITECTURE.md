@@ -89,6 +89,22 @@ Hold rule against today (speech start = end of answer + 0.19 s). Prefill is in b
 Answers here are short (median 613 characters, about 2.6 s of writing), so the saving grows with answer length: the p90
 is the long answers.
 
+## Worst case: narration before another tool call (2026-10-13)
+
+Open WebUI can't know whether the model will call another tool after the text it is writing. [`proof/narration_stress.py`](../proof/narration_stress.py)
+drives real agent loops with ten prompts built to provoke narration (multi-step research, "check A, then B, then C"),
+with canned tool results that come back thin so the models go round again, and counts what the hold rule would have
+streamed before another tool call.
+
+| Model | Runs | Steps followed by a tool call | With narration text | Streamed, 1 sentence | Streamed, 2 sentences (default) |
+|---|---|---|---|---|---|
+| Qwen3.8-Flash-Next, `reasoning_effort` low | 20 | 42 | 10 | 10 | **0** |
+| GLM-5.3-Flash, `reasoning_effort` high | 20 | 44 | 16 | 2 | **0** |
+
+Every narration line was one sentence announcing the next action ("I'll pull your lab's network details and look up
+pfSense VLAN setup at the same time."). The run also found a bug, now fixed: Flash-Next ends narration with blank lines,
+and the rule counted each line break as a sentence, so one sentence plus two blank lines was released.
+
 ## Proof of concept (2026-10-13)
 
 | Piece | Where | State |

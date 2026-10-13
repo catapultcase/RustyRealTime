@@ -233,7 +233,7 @@ index 335907f..4dd929a 100644
 +	"Complete sentences the answer must hold, with no tool call after them, before any of it is sent.": ""
  }
 diff --git a/src/lib/utils/realtime.ts b/src/lib/utils/realtime.ts
-index d1d76f5..d3d0849 100644
+index d1d76f5..a1d52af 100644
 --- a/src/lib/utils/realtime.ts
 +++ b/src/lib/utils/realtime.ts
 @@ -1,5 +1,6 @@
@@ -256,7 +256,7 @@ index d1d76f5..d3d0849 100644
  };
  type Options = {
  	context: () => CallContext;
-@@ -66,6 +73,31 @@ export function getBridgeTurnState(message: any) {
+@@ -66,6 +73,36 @@ export function getBridgeTurnState(message: any) {
  	return 'completed';
  }
  
@@ -279,16 +279,21 @@ index d1d76f5..d3d0849 100644
 +		if (item?.type === 'function_call' || item?.type === 'function_call_output') start = index + 1;
 +	});
 +	const text = getOutputText(items.slice(start));
-+	const ends = [...text.matchAll(SENTENCE_END)]
-+		.map((match) => match.index! + match[0].length)
-+		.filter((end) => text.slice(0, end).trim());
++	// A boundary counts only after real text: blank lines between paragraphs are not sentences.
++	const ends: number[] = [];
++	let last = 0;
++	for (const match of text.matchAll(SENTENCE_END)) {
++		const end = match.index! + match[0].length;
++		if (text.slice(last, end).trim()) ends.push(end);
++		last = end;
++	}
 +	return ends.length >= minSentences ? text.slice(0, ends[ends.length - 1]) : '';
 +}
 +
  /** One browser call, with no provider credentials and no alternate chat execution path. */
  export class RealtimeCall {
  	connected = false;
-@@ -94,6 +126,8 @@ export class RealtimeCall {
+@@ -94,6 +131,8 @@ export class RealtimeCall {
  	private callId = '';
  	private token = '';
  	private configuration = '';
@@ -297,7 +302,7 @@ index d1d76f5..d3d0849 100644
  	private chatContext = '';
  	private cancelRequested = false;
  	private receivingSpeech = '';
-@@ -345,6 +379,7 @@ export class RealtimeCall {
+@@ -345,6 +384,7 @@ export class RealtimeCall {
  			if (event.sample_rate !== 24000) throw new Error('Wrong sample rate');
  			this.model = event.model;
  			this.voice = event.voice;
@@ -305,7 +310,7 @@ index d1d76f5..d3d0849 100644
  			this.connected = true;
  			this.connecting = false;
  			this.syncContext();
-@@ -584,18 +619,37 @@ export class RealtimeCall {
+@@ -584,18 +624,37 @@ export class RealtimeCall {
  		if (state === 'approval' && !turn.approval)
  			this.enqueue({ type: 'bridge.status', status: 'approval' });
  		turn.approval = this.approval;
@@ -344,7 +349,7 @@ index d1d76f5..d3d0849 100644
  	private result(turn: VoiceTurn, status: string, answer: string, speak = true) {
  		turn.finished = true;
  		this.send({
-@@ -665,6 +719,7 @@ export class RealtimeCall {
+@@ -665,6 +724,7 @@ export class RealtimeCall {
  
  	stopSpeaking() {
  		this.animationInterruption++;
