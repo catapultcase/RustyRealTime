@@ -11,6 +11,7 @@ https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
 | Text before a tool call is narration ("let me search more") and shouldn't be spoken; nobody knows a tool call is coming until it starts | only text after the latest tool result, held back until the model has written 400 more bytes after it; in every test narration came straight before the call and was shorter than that, so it was held back (a longer one could be partly spoken) |
 | Rules based on punctuation break across models, languages and formats | none used: structure and a byte count only |
 | Summarising voice setups need the whole answer | off by default; nothing changes unless switched on |
+| Providers that don't know the streamed event would reject it, ending the call | streams only to a provider that announces `openwebui_stream_results` |
 | Talking over a streamed answer | stops it, as today |
 
 **Settings** (Admin → Audio → Voice calls): *Stream answers to the voice provider* (`AUDIO_REALTIME_STREAM_RESULTS`)
@@ -40,7 +41,7 @@ sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
 | | |
 |---|---|
-| Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 129 lines, call code and settings only |
+| Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 131 lines, call code and settings only |
 | Voice provider | [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead) (HF speech-to-speech + patch) |
 | Test scripts | [proof/](proof) |
 | Earlier design (`main`) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |

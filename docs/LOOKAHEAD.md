@@ -14,7 +14,9 @@ check your network"); text without one is the answer.
 | Model signal | if the model marks commentary vs final answer, use it |
 | Contract | Voice Mode Prompt: no text before tool calls in voice turns |
 
-K: admin setting + `AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES`, default 400, off unless streaming is on. Worst case: a long
+K: admin setting + `AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES`, default 400, off unless streaming is on. Streaming is used
+only with a provider that announces `openwebui_stream_results` in `session.updated`: others would reject the unknown
+event, and Open WebUI ends the call on a provider error. Worst case: a long
 narration's start is spoken. Detection doesn't depend on model speed; the gain does (speech starts ~100 tokens into the
 answer), and it is never later than today.
 
@@ -43,7 +45,7 @@ answer), and it is never later than today.
 
 ## Build
 
-- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against dev `93d25db`, 6 files, 129 lines: call code and
+- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against dev `93d25db`, 6 files, 131 lines: call code and
   its two settings only, no core changes.
 - **Bridge:** [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
   speaks released text in whole sentences by its own TTS splitter.

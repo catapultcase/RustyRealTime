@@ -47,7 +47,7 @@ index eb0d045..2b1822f 100644
  
  
 diff --git a/backend/open_webui/routers/audio/realtime.py b/backend/open_webui/routers/audio/realtime.py
-index 5d1c5b0..7e47c13 100644
+index 5d1c5b0..a9398de 100644
 --- a/backend/open_webui/routers/audio/realtime.py
 +++ b/backend/open_webui/routers/audio/realtime.py
 @@ -57,7 +57,9 @@ Treat gestures as your actions and converse naturally without narrating their im
@@ -109,11 +109,13 @@ index 5d1c5b0..7e47c13 100644
          )
          override = ModelVoice.model_validate((model_info.meta.model_dump().get('voice') if model_info else None) or {})
          voice_model = config.get('audio.realtime.model')
-@@ -427,7 +447,19 @@ async def realtime_call(ws: WebSocket):
+@@ -427,7 +447,21 @@ async def realtime_call(ws: WebSocket):
              event = await upstream.receive_json()
              if event.get('type') != 'session.updated':
                  raise ValueError('Provider rejected voice configuration. Check model, voice, and transcription model.')
 -        await ws.send_json({'type': 'bridge.ready', 'model': voice_model, 'voice': voice, 'sample_rate': 24000})
++            # Only providers that say so get streamed results: others reject the unknown event, which ends the call.
++            protocol.stream_results = protocol.stream_results and event.get('openwebui_stream_results') is True
 +        await ws.send_json(
 +            {
 +                'type': 'bridge.ready',
