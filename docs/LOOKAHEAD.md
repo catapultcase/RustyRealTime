@@ -24,12 +24,14 @@ answer), and it is never later than today.
 
 | Test | Result |
 |---|---|
-| 96 runs: 3 models, English/Chinese/Japanese/German, lists/tables/code | text after a tool call started: 0 of 251 steps |
-| narration spoken, K = 400 bytes, idle and under load | 0 on all models (old sentence rule: 4/20, 0/30, 15/22) |
+| 288 runs: 7 set-ups (Qwen3.8-Flash-Next low/high, GLM-5.3-Flash high/brief, Qwen3.5-9B, Qwen3.8-27B, Swift 1.5 27B); English/Chinese/Japanese/German; lists/tables/code | text after a tool call started: 0 of 557 steps |
+| narration spoken, K = 400 bytes, idle and under load | 0 on all 7 set-ups (longest narration 292 bytes; old sentence rule: 4/20, 0/30, 15/22) |
 | K in time instead | fails under load (narration up to 2.7 s against 1.3 s idle) |
 | speech starts sooner, K = 400 bytes | 0.9-1.3 s Flash-Next, 4.0-8.2 s GLM-5.3, 1.1 s Qwen3.5-9B |
 | bridge: streamed sentences | each spoken once, in order, no errors |
-| follow-ups after an answer (9B voice model, 40 trials) | handed off 20/20 unstreamed, 18/20 streamed: not yet a clear difference |
+| follow-ups after an answer (9B voice model) | before the history fix 20/20 vs 18/20; after it 20/20 vs 20/20, then 48/50 unstreamed vs 49/50 streamed: no difference (misses are the 9B's own) |
+| talking over a streamed answer ([`interrupt_test.py`](../proof/interrupt_test.py)) | the rest stops; only the sentence already in flight is generated, then the voice model answers the interruption (5/5) |
+| noise burst during a streamed answer | not treated as speech by the provider's VAD; the answer continues (5/5) |
 
 **Manual** (live calls, Flash-Next chat model, Qwen3.5-9B voice model):
 
@@ -45,4 +47,4 @@ answer), and it is never later than today.
   its two settings only, no core changes.
 - **Bridge:** [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
   speaks released text in whole sentences by its own TTS splitter.
-- **Open:** streamed sentences reach the voice model's history only with the final result; may matter for follow-ups.
+- **Voice model history:** streamed sentences are in-band, so the voice model's history holds them as spoken.
