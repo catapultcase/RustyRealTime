@@ -41,7 +41,7 @@ sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
 | | |
 |---|---|
-| Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 131 lines, call code and settings only |
+| Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 131 lines, call code and settings only, plus a vitest file |
 | Voice provider | [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead) (HF speech-to-speech + patch) |
 | Test scripts | [proof/](proof) |
 | Earlier design (`main`) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |

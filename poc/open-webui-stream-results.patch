@@ -193,6 +193,34 @@ index 335907f..b3a0f27 100644
 +	"Streaming lookahead (bytes)": "",
 +	"Text is sent only once the model has written this much more after it, so narration just before a tool call is held back.": ""
  }
+diff --git a/src/lib/utils/realtime.test.ts b/src/lib/utils/realtime.test.ts
+new file mode 100644
+index 0000000..5d2d4d8
+--- /dev/null
++++ b/src/lib/utils/realtime.test.ts
+@@ -0,0 +1,22 @@
++import { describe, expect, it } from 'vitest';
++import { getStreamableText } from './realtime';
++
++const message = (text: string) => ({ type: 'message', content: [{ type: 'output_text', text }] });
++const call = { type: 'function_call' };
++const result = { type: 'function_call_output' };
++
++describe('getStreamableText', () => {
++	it('holds narration written before a tool call', () => {
++		expect(getStreamableText([message("I'll check your network."), call], 400)).toBe('');
++	});
++
++	it('releases only text after the latest tool result, minus the lookahead', () => {
++		const answer = 'x'.repeat(450);
++		expect(getStreamableText([message('a'.repeat(500)), call, result, message(answer)], 400)).toBe('x'.repeat(50));
++	});
++
++	it('never cuts a multi-byte character in half', () => {
++		const text = getStreamableText([call, result, message('沃斯堡'.repeat(50))], 400);
++		expect(text).toBe('沃斯堡'.repeat(50).slice(0, 16));
++	});
++});
 diff --git a/src/lib/utils/realtime.ts b/src/lib/utils/realtime.ts
 index d1d76f5..d0e372d 100644
 --- a/src/lib/utils/realtime.ts
