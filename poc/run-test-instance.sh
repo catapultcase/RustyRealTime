@@ -5,6 +5,7 @@
 #   CHAT_URL=http://<chat-server>/v1 BRIDGE_URL=http://<bridge>:8765/v1 VOICE=am_onyx \
 #   PROMPT=realtime-call-prompt.txt ./run-test-instance.sh [image] [port]
 #
+# VOICE_MODEL names the voice model on its replies in the chat (default qwen3.5-9b); our bridge picks its own model.
 # The microphone needs HTTPS or localhost: on another machine, add http://<this-host>:<port> to
 # chrome://flags/#unsafely-treat-insecure-origin-as-secure.
 set -euo pipefail
@@ -20,7 +21,7 @@ docker run -d --name open-webui-rrt -p "$PORT:8080" -v "$DATA:/app/backend/data"
   -e ENABLE_OLLAMA_API=false \
   -e AUDIO_REALTIME_ENABLED=true \
   -e AUDIO_REALTIME_OPENAI_API_BASE_URL="$BRIDGE_URL" -e AUDIO_REALTIME_OPENAI_API_KEY=none \
-  -e AUDIO_REALTIME_MODEL=voice -e AUDIO_REALTIME_VOICE="$VOICE" \
+  -e AUDIO_REALTIME_MODEL="${VOICE_MODEL:-qwen3.5-9b}" -e AUDIO_REALTIME_VOICE="$VOICE" \
   -e AUDIO_REALTIME_TRANSCRIPTION_MODEL="${TRANSCRIPTION_MODEL:-parakeet-tdt-0.6b-v3}" \
   -e REALTIME_CALL_PROMPT_TEMPLATE="$(cat "$PROMPT")" \
   -e AUDIO_REALTIME_STREAM_RESULTS=true -e AUDIO_REALTIME_STREAM_MIN_SENTENCES=2 \
