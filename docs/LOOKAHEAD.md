@@ -20,6 +20,9 @@ event, and Open WebUI ends the call on a provider error. Worst case: a long
 narration's start is spoken. Detection doesn't depend on model speed; the gain does (speech starts ~100 tokens into the
 answer), and it is never later than today.
 
+**Known limits:** native function calling only (a model that writes tool calls as text could have them released); the
+noise case of #32248 is untested here (the bridge's VAD ignored a noise burst); tested on one setup with canned tool results.
+
 ## Tests
 
 **Automated** ([`proof/`](../proof); canned tool results, machine names anonymised):
