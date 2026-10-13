@@ -1,7 +1,8 @@
 # RustyRealTime (branch `lookahead`)
 
 Open WebUI Realtime voice calls that start speaking a long answer while the chat model is still writing it.
-Request: [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). Work in progress.
+The request ([open-webui#32311](https://github.com/open-webui/open-webui/issues/32311)) was closed upstream: not
+mergeable at Open WebUI's scale. Kept as a personal patch for setups like mine.
 
 https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
 
