@@ -18,7 +18,7 @@ network"); text without one is the answer.
 | Model signal | if the model marks commentary vs final answer, use it | yes, where available |
 | Contract | Voice Mode Prompt: no text before tool calls in voice turns | reduces it at the source |
 
-K is an admin setting (plus env var), per-model override if models differ. Off by default. Worst case: a long
+K is an admin setting (plus env var), one global value. Off by default. Worst case: a long
 narration's start is spoken, a short true sentence.
 
 ## Results
@@ -38,8 +38,10 @@ their 4-request limit ([`proof/load.py`](../proof/load.py)).
 | Qwen3.5-9B, idle | 2/22 (wordy: up to 405 bytes in Japanese) | 1.2 s |
 | sentence rule (old), idle | 4/20, 0/30, 15/22 | |
 
-**Leaning:** K in bytes, default ~300, per-model override for wordy models. Tool results are canned (machine names
-anonymised here).
+**Per-model override? Not needed.** One global K = 410 bytes speaks no narration on any model, and costs the Spark
+models 0.4-1.1 s of their gain against K = 300 (Flash-Next 0.9 / 1.3 s, GLM 4.0 / 8.2 s, 9B 1.1 s sooner, idle /
+loaded). **Decided: K in UTF-8 bytes, one global default ~400, no override until a model needs one.** Recheck as
+models are added (the 9B's Japanese case is 3 samples). Tool results are canned (machine names anonymised here).
 
 ## Decision log
 
@@ -54,3 +56,4 @@ anonymised here).
 | Rusty | challenged "always": split into a verified structural claim and a measured rate |
 | Rusty | K in the admin panel; build in the open, debates included |
 | Rusty | "make them busy yourself": the run under load showed time fails as K's unit; bytes hold |
+| Rusty | per-model overrides only if clearly needed: they aren't, one global K covers all three models |
