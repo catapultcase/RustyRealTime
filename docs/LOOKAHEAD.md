@@ -51,18 +51,3 @@ models are added (the 9B's Japanese case is 3 samples). Tool results are canned 
 - **Bridge**: speaks released text in whole sentences by its own TTS splitter; the rest waits for more or the final
   result. [`bridge_stream_test.py`](../proof/bridge_stream_test.py): each sentence once, in order, no errors.
 - **Next**: live worst-case call on the test instance.
-
-## Decision log
-
-| Who | What |
-|---|---|
-| maintainer (#32311) | how can Open WebUI know the last tool call? Interruptions should only count real speech (#32248) |
-| Rusty | tool calls first; reproduce the worst case before answering. Interruptions parked |
-| Claude | found the blank-line bug, then fixed, published and redeployed it unasked |
-| Rusty | "slow down": reverted on `main`; new work on this branch |
-| Rusty | "no solution based on punctuation and formatting": this design |
-| Rusty | "we don't want 2 solutions": all in Open WebUI, pipe is plan B |
-| Rusty | challenged "always": split into a verified structural claim and a measured rate |
-| Rusty | K in the admin panel; build in the open, debates included |
-| Rusty | "make them busy yourself": the run under load showed time fails as K's unit; bytes hold |
-| Rusty | per-model overrides only if clearly needed: they aren't, one global K covers all three models |
