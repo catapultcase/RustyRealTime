@@ -50,4 +50,8 @@ models are added (the 9B's Japanese case is 3 samples). Tool results are canned 
   Unit-tested: narration held, CJK never cut mid-character.
 - **Bridge** ([recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead)): speaks released text in whole sentences by its own TTS splitter; the rest waits for more or the final
   result. [`bridge_stream_test.py`](../proof/bridge_stream_test.py): each sentence once, in order, no errors.
+- **Follow-ups after a streamed answer** ([`followup_test.py`](../proof/followup_test.py), Qwen3.5-9B voice model, 40
+  trials): handed off 20/20 unstreamed, 18/20 streamed. Both misses answered from the earlier answer. Streamed
+  sentences stay out of the voice model's history until the final result is spoken, which can come after the
+  follow-up; 2 in 20 is not yet a clear difference.
 - **Next**: live worst-case call on the test instance.
