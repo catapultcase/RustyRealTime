@@ -20,6 +20,24 @@ and *Streaming lookahead (bytes)* (`AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES`, defa
 lines held back (99.4%); speech starts 1-8 s
 sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
+## Try it
+
+1. **Open WebUI with the patch** (Docker):
+
+   ```bash
+   git clone https://github.com/open-webui/open-webui.git && cd open-webui && git checkout 93d25db
+   curl -sL https://raw.githubusercontent.com/catapultcase/RustyRealTime/lookahead/poc/open-webui-stream-results.patch | git apply
+   sed -i 's|^# ENV NODE_OPTIONS=.*|ENV NODE_OPTIONS="--max-old-space-size=8192"|' Dockerfile   # the frontend build needs it
+   docker build -t open-webui-stream .
+   ```
+
+   Run it like any Open WebUI image ([`poc/run-test-instance.sh`](poc/run-test-instance.sh) presets the call settings).
+2. **A voice provider that handles streamed text:** OpenAI's Realtime API doesn't (yet). Set up the
+   [recipe's `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
+   HF speech-to-speech with its patch, all local.
+3. **Admin → Settings → Audio → Voice calls:** Call mode *Realtime*, the provider's URL, then *Stream answers to the voice
+   provider* on.
+
 | | |
 |---|---|
 | Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 129 lines, call code and settings only |
