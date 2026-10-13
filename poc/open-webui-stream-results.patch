@@ -1,19 +1,3 @@
-From 94f68bbff8516790b5f023ec722d5f829218ca8f Mon Sep 17 00:00:00 2001
-From: rusty6285 <rustyone@gmail.com>
-Date: Mon, 12 Oct 2026 22:19:09 -0500
-Subject: [PATCH] feat: stream a Realtime hand-off's answer to the voice
- provider while it is written (opt-in)
-
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
----
- backend/open_webui/config.py                  |  7 +++
- backend/open_webui/routers/audio/__init__.py  |  4 ++
- backend/open_webui/routers/audio/realtime.py  | 38 ++++++++++++--
- .../components/admin/Settings/Audio.svelte    | 27 ++++++++++
- src/lib/i18n/locales/en-US/translation.json   |  6 ++-
- src/lib/utils/realtime.ts                     | 50 +++++++++++++++++++
- 6 files changed, 128 insertions(+), 4 deletions(-)
-
 diff --git a/backend/open_webui/config.py b/backend/open_webui/config.py
 index a5e2205..c720df1 100644
 --- a/backend/open_webui/config.py
@@ -206,7 +190,7 @@ index 335907f..4dd929a 100644
 +	"Complete sentences the answer must hold, with no tool call after them, before any of it is sent.": ""
  }
 diff --git a/src/lib/utils/realtime.ts b/src/lib/utils/realtime.ts
-index d1d76f5..176e7bc 100644
+index d1d76f5..d3d0849 100644
 --- a/src/lib/utils/realtime.ts
 +++ b/src/lib/utils/realtime.ts
 @@ -1,5 +1,6 @@
@@ -216,7 +200,7 @@ index d1d76f5..176e7bc 100644
  
  export type BridgeSubmission = {
  	status: 'submitted' | 'deferred' | 'rejected';
-@@ -25,6 +26,10 @@ type VoiceTurn = {
+@@ -25,6 +26,12 @@ type VoiceTurn = {
  	modelId: string;
  	finished: boolean;
  	approval: boolean;
@@ -224,10 +208,12 @@ index d1d76f5..176e7bc 100644
 +	streamed?: string;
 +	/** A tool call followed the streamed text: send nothing more until the final result. */
 +	streamClosed?: boolean;
++	/** The user talked over the streamed answer: send no more of it and do not speak its result. */
++	streamInterrupted?: boolean;
  };
  type Options = {
  	context: () => CallContext;
-@@ -66,6 +71,31 @@ export function getBridgeTurnState(message: any) {
+@@ -66,6 +73,31 @@ export function getBridgeTurnState(message: any) {
  	return 'completed';
  }
  
@@ -259,7 +245,7 @@ index d1d76f5..176e7bc 100644
  /** One browser call, with no provider credentials and no alternate chat execution path. */
  export class RealtimeCall {
  	connected = false;
-@@ -94,6 +124,8 @@ export class RealtimeCall {
+@@ -94,6 +126,8 @@ export class RealtimeCall {
  	private callId = '';
  	private token = '';
  	private configuration = '';
@@ -268,7 +254,7 @@ index d1d76f5..176e7bc 100644
  	private chatContext = '';
  	private cancelRequested = false;
  	private receivingSpeech = '';
-@@ -345,6 +377,7 @@ export class RealtimeCall {
+@@ -345,6 +379,7 @@ export class RealtimeCall {
  			if (event.sample_rate !== 24000) throw new Error('Wrong sample rate');
  			this.model = event.model;
  			this.voice = event.voice;
@@ -276,7 +262,7 @@ index d1d76f5..176e7bc 100644
  			this.connected = true;
  			this.connecting = false;
  			this.syncContext();
-@@ -584,6 +617,7 @@ export class RealtimeCall {
+@@ -584,18 +619,37 @@ export class RealtimeCall {
  		if (state === 'approval' && !turn.approval)
  			this.enqueue({ type: 'bridge.status', status: 'approval' });
  		turn.approval = this.approval;
@@ -284,13 +270,21 @@ index d1d76f5..176e7bc 100644
  		if (['completed', 'failed', 'cancelled'].includes(state)) {
  			this.result(
  				turn,
-@@ -596,6 +630,22 @@ export class RealtimeCall {
+ 				state,
+ 				state === 'completed'
+ 					? this.options.visibleText(message)
+-					: 'The backend request did not complete successfully.'
++					: 'The backend request did not complete successfully.',
++				// A streamed answer the user talked over is finished: its result is recorded, not spoken.
++				!(state === 'completed' && turn.streamInterrupted)
+ 			);
+ 		}
  		this.options.change();
  	}
  
 +	/** Send the newly complete sentences of a still-streaming answer to the provider. */
 +	private streamResult(turn: VoiceTurn, message: any) {
-+		if (!this.streamResults || turn.streamClosed) return;
++		if (!this.streamResults || turn.streamClosed || turn.streamInterrupted) return;
 +		const text = getStreamableText(message?.output, this.streamResults.min_sentences);
 +		const sent = turn.streamed ?? '';
 +		if (sent && !text.startsWith(sent)) {
@@ -307,6 +301,11 @@ index d1d76f5..176e7bc 100644
  	private result(turn: VoiceTurn, status: string, answer: string, speak = true) {
  		turn.finished = true;
  		this.send({
--- 
-2.56.0
-
+@@ -665,6 +719,7 @@ export class RealtimeCall {
+ 
+ 	stopSpeaking() {
+ 		this.animationInterruption++;
++		if (this.pending?.streamed) this.pending.streamInterrupted = true;
+ 		if (this.responseRequested) this.cancelRequested = true;
+ 		const responses = new Set(
+ 			[...this.speakingResponses].filter((id) => !this.interrupted.has(id))

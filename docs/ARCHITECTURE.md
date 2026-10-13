@@ -42,6 +42,7 @@ Two points raised on the request shaped this design. Both are addressed below:
 | Hold rule | commit an item only once it holds N complete sentences with no tool call after it (`AUDIO_REALTIME_STREAM_MIN_SENTENCES`, default 2, from the replay below). Narration is one sentence and is followed by a call, so it is never committed. Structural only: no word lists |
 | Backend `realtime.py` | accept `bridge.result.delta {call_id, delta}` only when `AUDIO_REALTIME_STREAM_RESULTS` is on (Admin → Audio → Voice calls, off by default). Forward it as `openwebui.function_call_output.delta {call_id, delta}`. The final `function_call_output` is unchanged and still carries the whole answer. `bridge.ready` tells the frontend the setting |
 | Provider | opts in by handling the delta event: speak deltas as they arrive, then speak only the part of the final answer not yet spoken. Providers that don't support it leave the setting off and see no change |
+| Interruptions | talking over a streamed answer ends it: the frontend sends no more deltas for that turn and records its result without speaking it; the provider drops any deltas still queued. The full answer stays in the chat and in the voice model's history |
 | Gate | streaming only when the call reads answers **word for word**. Summarising setups keep today's path (consideration 2) |
 
 Side benefit: the narration filter could also clean today's completed answers (a separate change).
