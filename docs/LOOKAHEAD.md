@@ -10,7 +10,7 @@ check your network"); text without one is the answer.
 | Layer | What |
 |---|---|
 | Structure | never speak reasoning or tool output; only text after the latest tool result; stop once a tool call starts |
-| Lookahead | release text only once the model has written **K** more UTF-8 bytes after it; narration is followed only by the call |
+| Lookahead | release text only once the model has written **K** more UTF-8 bytes after it; in every test, narration came straight before the call and was shorter than K |
 | Model signal | if the model marks commentary vs final answer, use it |
 | Contract | Voice Mode Prompt: no text before tool calls in voice turns |
 

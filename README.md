@@ -8,7 +8,7 @@ https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
 | Problem | Solution |
 |---|---|
 | The voice side gets the answer only when it's complete: long answers mean silence | opt-in streaming: answer text goes to the voice provider while it's written |
-| Text before a tool call is narration ("let me search more") and shouldn't be spoken; nobody knows a tool call is coming until it starts | only text after the latest tool result, held back until the model has written 400 more bytes after it; narration is followed only by the call, so it never gets there |
+| Text before a tool call is narration ("let me search more") and shouldn't be spoken; nobody knows a tool call is coming until it starts | only text after the latest tool result, held back until the model has written 400 more bytes after it; in every test narration came straight before the call and was shorter than that, so it was held back (a longer one could be partly spoken) |
 | Rules based on punctuation break across models, languages and formats | none used: structure and a byte count only |
 | Summarising voice setups need the whole answer | off by default; nothing changes unless switched on |
 | Talking over a streamed answer | stops it, as today |
