@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/dd96054b-d518-41f0-b179-80e6e99884dc
 **Settings** (Admin → Audio → Voice calls): *Stream answers to the voice provider* (`AUDIO_REALTIME_STREAM_RESULTS`)
 and *Streaming lookahead (bytes)* (`AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES`, default 400).
 
-**Tested:** 3 models, 4 languages, lists/tables/code, idle and under load: no narration spoken; speech starts 1-8 s
+**Tested:** 7 model set-ups, 4 languages, lists/tables/code, idle and under load: no narration spoken; speech starts 1-8 s
 sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
 | | |
