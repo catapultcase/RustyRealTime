@@ -24,8 +24,8 @@ answer), and it is never later than today.
 
 | Test | Result |
 |---|---|
-| 288 runs: 7 set-ups (Qwen3.8-Flash-Next low/high, GLM-5.3-Flash high/brief, Qwen3.5-9B, Qwen3.8-27B, Swift 1.5 27B); English/Chinese/Japanese/German; lists/tables/code | text after a tool call started: 0 of 557 steps |
-| narration spoken, K = 400 bytes, idle and under load | 0 on all 7 set-ups (longest narration 292 bytes; old sentence rule: 4/20, 0/30, 15/22) |
+| 256 runs: 7 set-ups (Qwen3.8-Flash-Next low/high, GLM-5.3-Flash high/brief, Qwen3.5-9B, Qwen3.8-27B, Swift 1.5 27B); English/Chinese/Japanese/German; lists/tables/code | text after a tool call started: 0 of 628 steps |
+| narration held back, K = 400 bytes, idle and under load | 154 of 155 (99.4%); the one spoken was a 405-byte Japanese narration (Qwen3.5-9B); all held at 410 (old sentence rule spoke 4/20, 0/30, 15/22) |
 | K in time instead | fails under load (narration up to 2.7 s against 1.3 s idle) |
 | speech starts sooner, K = 400 bytes | 0.9-1.3 s Flash-Next, 4.0-8.2 s GLM-5.3, 1.1 s Qwen3.5-9B |
 | bridge: streamed sentences | each spoken once, in order, no errors |
