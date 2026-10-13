@@ -15,10 +15,13 @@ PORT=${2:-3010}
 : "${PROMPT:?call prompt file}"
 DATA=${DATA:-$HOME/owui-rrt-data}
 mkdir -p "$DATA"
+# The session-signing key lives with the data, so recreating the container for a new image keeps everyone signed in.
+[ -s "$DATA/.webui_secret_key" ] || head -c 32 /dev/urandom | base64 > "$DATA/.webui_secret_key"
 docker rm -f open-webui-rrt >/dev/null 2>&1 || true
 docker run -d --name open-webui-rrt --restart unless-stopped -p "$PORT:8080" -v "$DATA:/app/backend/data" \
   -e OPENAI_API_BASE_URLS="$CHAT_URL" -e OPENAI_API_KEYS=none \
   -e ENABLE_OLLAMA_API=false \
+  -e WEBUI_SECRET_KEY="$(cat "$DATA/.webui_secret_key")" \
   -e AUDIO_REALTIME_ENABLED=true \
   -e AUDIO_REALTIME_OPENAI_API_BASE_URL="$BRIDGE_URL" -e AUDIO_REALTIME_OPENAI_API_KEY=none \
   -e AUDIO_REALTIME_MODEL="${VOICE_MODEL:-qwen3.5-9b}" -e AUDIO_REALTIME_VOICE="$VOICE" \
