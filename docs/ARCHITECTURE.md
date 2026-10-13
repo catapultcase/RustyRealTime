@@ -1,5 +1,8 @@
 # RustyRealTime: architecture
 
+> On the `lookahead` branch the sentence-counting hold rule below is replaced by a byte lookahead: see
+> [LOOKAHEAD.md](LOOKAHEAD.md). The rest of this document still applies.
+
 Goal: in Open WebUI's Realtime calls, start speaking a hand-off's answer while the chat model is still
 writing it, without speaking the narration between tool calls. Upstream request:
 [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). Our call setup:

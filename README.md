@@ -13,7 +13,8 @@ The work is done in the open:
 
 - **Request:** [open-webui#32311](https://github.com/open-webui/open-webui/issues/32311). The design builds on the
   points raised there: no spoken narration, and summarising setups unchanged.
-- **Design and results:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- **Design and results:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). On this branch, the hold rule is replaced by a
+  byte lookahead with no punctuation rules: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 - **Proof scripts:** [proof/](proof). `export.py` pulls real tool-using answers from an Open WebUI database
   (read-only); `replay.py` replays their last step against your chat model and reports when speech could
   start, and how much narration each hold rule would speak.

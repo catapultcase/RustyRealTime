@@ -38,6 +38,10 @@ their 4-request limit ([`proof/load.py`](../proof/load.py)).
 | Qwen3.5-9B, idle | 2/22 (wordy: up to 405 bytes in Japanese) | 1.2 s |
 | sentence rule (old), idle | 4/20, 0/30, 15/22 | |
 
+**Model speed:** filler detection doesn't depend on it: K counts what the model wrote, not how long it took (time
+failed under load, bytes held). The gain does: speech starts after ~400 bytes (~100 tokens) of answer, about 2 s at 60
+tok/s and 10 s at 10 tok/s, always sooner than the whole answer; answers under K are spoken at the end, as today.
+
 **Per-model override? Not needed.** One global K = 410 bytes speaks no narration on any model, and costs the Spark
 models 0.4-1.1 s of their gain against K = 300 (Flash-Next 0.9 / 1.3 s, GLM 4.0 / 8.2 s, 9B 1.1 s sooner, idle /
 loaded). **Decided: K in UTF-8 bytes, one global default ~400, no override until a model needs one.** Recheck as
