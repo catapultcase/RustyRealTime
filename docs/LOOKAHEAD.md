@@ -48,6 +48,6 @@ models are added (the 9B's Japanese case is 3 samples). Tool results are canned 
 - **Open WebUI** ([patch](../poc/open-webui-stream-results.patch), 7 files, 146 lines): sentence rule removed; text after
   the latest tool call is released minus the last `AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES` (default 400, admin setting).
   Unit-tested: narration held, CJK never cut mid-character.
-- **Bridge**: speaks released text in whole sentences by its own TTS splitter; the rest waits for more or the final
+- **Bridge** ([recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead)): speaks released text in whole sentences by its own TTS splitter; the rest waits for more or the final
   result. [`bridge_stream_test.py`](../proof/bridge_stream_test.py): each sentence once, in order, no errors.
 - **Next**: live worst-case call on the test instance.
