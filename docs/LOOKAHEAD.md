@@ -43,6 +43,15 @@ models 0.4-1.1 s of their gain against K = 300 (Flash-Next 0.9 / 1.3 s, GLM 4.0 
 loaded). **Decided: K in UTF-8 bytes, one global default ~400, no override until a model needs one.** Recheck as
 models are added (the 9B's Japanese case is 3 samples). Tool results are canned (machine names anonymised here).
 
+## Build status
+
+- **Open WebUI** ([patch](../poc/open-webui-stream-results.patch), 7 files, 146 lines): sentence rule removed; text after
+  the latest tool call is released minus the last `AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES` (default 400, admin setting).
+  Unit-tested: narration held, CJK never cut mid-character.
+- **Bridge**: speaks released text in whole sentences by its own TTS splitter; the rest waits for more or the final
+  result. [`bridge_stream_test.py`](../proof/bridge_stream_test.py): each sentence once, in order, no errors.
+- **Next**: live worst-case call on the test instance.
+
 ## Decision log
 
 | Who | What |

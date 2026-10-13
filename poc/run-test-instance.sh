@@ -27,6 +27,6 @@ docker run -d --name open-webui-rrt --restart unless-stopped -p "$PORT:8080" -v 
   -e AUDIO_REALTIME_MODEL="${VOICE_MODEL:-qwen3.5-9b}" -e AUDIO_REALTIME_VOICE="$VOICE" \
   -e AUDIO_REALTIME_TRANSCRIPTION_MODEL="${TRANSCRIPTION_MODEL:-parakeet-tdt-0.6b-v3}" \
   -e REALTIME_CALL_PROMPT_TEMPLATE="$(cat "$PROMPT")" \
-  -e AUDIO_REALTIME_STREAM_RESULTS=true -e AUDIO_REALTIME_STREAM_MIN_SENTENCES=2 \
+  -e AUDIO_REALTIME_STREAM_RESULTS=true -e AUDIO_REALTIME_STREAM_LOOKAHEAD_BYTES=400 \
   "$IMAGE"
 echo "Open WebUI (stream-results) on :$PORT, data in $DATA"
