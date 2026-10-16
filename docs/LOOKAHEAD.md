@@ -48,7 +48,7 @@ noise case of #32248 is untested here (the bridge's VAD ignored a noise burst); 
 
 ## Build
 
-- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against dev `93d25db`: call code and its two settings
+- **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against release `v0.12.3` (tests above ran on dev `93d25db`): call code and its two settings
   (6 files, 131 lines), no core changes, plus a vitest file for the lookahead (`npx vitest run src/lib/utils/realtime.test.ts`).
 - **Bridge:** [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
   speaks released text in whole sentences by its own TTS splitter.

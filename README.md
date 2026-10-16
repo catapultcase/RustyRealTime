@@ -27,7 +27,7 @@ sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 1. **Open WebUI with the patch** (Docker):
 
    ```bash
-   git clone https://github.com/open-webui/open-webui.git && cd open-webui && git checkout 93d25db
+   git clone https://github.com/open-webui/open-webui.git && cd open-webui && git checkout v0.12.3
    curl -sL https://raw.githubusercontent.com/catapultcase/RustyRealTime/lookahead/poc/open-webui-stream-results.patch | git apply
    sed -i 's|^# ENV NODE_OPTIONS=.*|ENV NODE_OPTIONS="--max-old-space-size=8192"|' Dockerfile   # the frontend build needs it
    docker build -t open-webui-stream .
