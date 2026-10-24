@@ -1,6 +1,6 @@
 # RustyRealTime: architecture
 
-> On the `lookahead` branch the sentence-counting hold rule below is replaced by a byte lookahead: see
+> The sentence-counting hold rule below is replaced by a byte lookahead: see
 > [LOOKAHEAD.md](LOOKAHEAD.md), and the voice-transcript tag (Hardening, below) is dropped to keep the patch to call
 > code. The rest of this document still applies.
 

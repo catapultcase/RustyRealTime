@@ -1,4 +1,4 @@
-# RustyRealTime (branch `lookahead`)
+# RustyRealTime
 
 Open WebUI Realtime voice calls that start speaking a long answer while the chat model is still writing it.
 The request ([open-webui#32311](https://github.com/open-webui/open-webui/issues/32311)) was closed upstream: not
@@ -28,14 +28,14 @@ sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 
    ```bash
    git clone https://github.com/open-webui/open-webui.git && cd open-webui && git checkout v0.12.3
-   curl -sL https://raw.githubusercontent.com/catapultcase/RustyRealTime/lookahead/poc/open-webui-stream-results.patch | git apply
+   curl -sL https://raw.githubusercontent.com/catapultcase/RustyRealTime/main/poc/open-webui-stream-results.patch | git apply
    sed -i 's|^# ENV NODE_OPTIONS=.*|ENV NODE_OPTIONS="--max-old-space-size=8192"|' Dockerfile   # the frontend build needs it
    docker build -t open-webui-stream .
    ```
 
    Run it like any Open WebUI image ([`poc/run-test-instance.sh`](poc/run-test-instance.sh) presets the call settings).
 2. **A voice provider that handles streamed text:** OpenAI's Realtime API doesn't (yet). Set up the
-   [recipe's `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
+   [the recipe](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui):
    HF speech-to-speech with its patch, all local.
 3. **Admin → Settings → Audio → Voice calls:** Call mode *Realtime*, the provider's URL, then *Stream answers to the voice
    provider* on.
@@ -43,7 +43,7 @@ sooner. Details: [docs/LOOKAHEAD.md](docs/LOOKAHEAD.md).
 | | |
 |---|---|
 | Open WebUI change | [patch](poc/open-webui-stream-results.patch): 6 files, 131 lines, call code and settings only, plus a vitest file |
-| Voice provider | [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead) (HF speech-to-speech + patch) |
+| Voice provider | [recipe](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui) (HF speech-to-speech + patch) |
 | Test scripts | [proof/](proof) |
 | Earlier design (`main`) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 

@@ -1,4 +1,4 @@
-# Lookahead (branch `lookahead`, work in progress)
+# Lookahead
 
 Replaces the sentence-counting hold rule in [ARCHITECTURE.md](ARCHITECTURE.md). No punctuation or formatting rules.
 
@@ -50,6 +50,6 @@ noise case of #32248 is untested here (the bridge's VAD ignored a noise burst); 
 
 - **Open WebUI:** [patch](../poc/open-webui-stream-results.patch) against release `v0.12.3` (tests above ran on dev `93d25db`): call code and its two settings
   (6 files, 131 lines), no core changes, plus a vitest file for the lookahead (`npx vitest run src/lib/utils/realtime.test.ts`).
-- **Bridge:** [recipe `lookahead` branch](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui/tree/lookahead):
+- **Bridge:** [recipe](https://github.com/catapultcase/rustys-fully-local-realtime-chat-via-open-webui):
   speaks released text in whole sentences by its own TTS splitter.
 - **Voice model history:** streamed sentences are in-band, so the voice model's history holds them as spoken.
